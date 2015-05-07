@@ -1,14 +1,13 @@
-Things Todo for Django-uWSGI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Todo
+====
 
 * Tests
-* Create ``stats.py`` and and use it to get uWSGI stats in ``views.py`` and ``panels.py`` or by some other application(more DRY)
-* Add to repo email & cache backends, runuwsgi, mixins
 * uWSGI config generator
-* `Docs <http://django-uwsgi.readthedocs.org/en/latest/>`_
+* Improve `Docs <http://django-uwsgi.rtfd.org>`_
 * Translations?
-* Screenshots
-* Add Django models to store Vassals info/config in `PostgreSQL`_ or `MongoDB`_
+* Good cache panel
+* Ability to add cronjobs/filemonitors via admin interface
+* Options for sendfile if uwsgi serving files
 
 
 Some code is borrowed from projects I did earlier and some code is still not added yet, but does exists in my projects.

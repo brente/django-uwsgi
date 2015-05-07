@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = '0.1.3'
 
 
 try:
@@ -6,11 +6,9 @@ try:
 except ImportError:
     uwsgi = None
 
-
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
-
-default_app_config = 'django_uwsgi.apps.DjangouWSGIConfig'
+default_app_config = 'django_uwsgi.apps.DjangoUwsgiConfig'

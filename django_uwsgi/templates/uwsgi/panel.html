@@ -1,28 +1,44 @@
 {% load i18n %}
 {% if unavailable %}
-    <h1>{% trans 'ERROR: uWSGI is not available!' %}</h1>
+    <h4>{% trans 'ERROR: uWSGI is not available!' %}</h4>
 {% else %}
-<h1>uWSGI {{ version }} status @ {{ hostname }}</h1>
+
+
 <div id="content-main" class="inline-related tabular">
     <div class="module">
+    <h4>{% trans 'Status' %}</h4>
         <table>
-            <caption>{% trans 'Status' %}</caption>
+            <thead>
+                <tr>
+                    <th>{% trans "Option" %}</th>
+                    <th>{% trans "Value" %}</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for key, value in stats %}
-                <tr class="{% cycle 'row1' 'row2' %}">
-                    <th scope="row">{{ key }}</th><td>{{ value }}</td>
+                <tr class="{% cycle 'djDebugOdd' 'djDebugEven' %}">
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <div class="module">
+    <h4>{% trans 'Options' %}</h4>
         <table>
-            <caption>{% trans 'Options' %}</caption>
+            <thead>
+                <tr>
+                    <th>{% trans "Option" %}</th>
+                    <th>{% trans "Value" %}</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for key, value in options %}
-                <tr class="{% cycle 'row1' 'row2' %}">
-                    <th scope="row">{{ key }}</th><td>{{ value }}</td>
+                <tr class="{% cycle 'djDebugOdd' 'djDebugEven' %}">
+                    <td><a href="http://uwsgi-docs.readthedocs.org/en/latest/Options.html#{{ key }}">{{ key }}</a></td>
+                    {# uWSGI allows to use options without values if value = true #}
+                    <td>{% if value %}{{ value }}{% else %}true{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -30,32 +46,36 @@
     </div>
 
     <div class="module balanced">
+    <h4>{% trans 'Workers' %}</h4>
         <table>
-            <caption>{% trans 'Workers' %}</caption>
             <thead>
                 <tr>
-                    <th>id</th>
-                    <th>pid</th>
-                    <th>status</th>
-                    <th>requests</th>
-                    <th>exceptions</th>
-                    <th>running time (milliseconds)</th>
-                    <th>load</th>
-                    <th>last spawn</th>
-                    <th>respawn count</th>
-                    <th>address space (vsz)</th>
-                    <th>resident memory (rss)</th>
+                    <th>{% trans "id" %}</th>
+                    <th>{% trans "pid" %}</th>
+                    <th>{% trans "status" %}</th>
+                    <th>{% trans "requests" %}</th>
+                    <th>{% trans "exceptions" %}</th>
+                    <th>{% trans "signals" %}</th>
+                    <th>{% trans "running time(ms)" %}</th>
+                    <th>{% trans "avg response time(ms)" %}</th>
+                    <th>{% trans "load" %}</th>
+                    <th>{% trans "last spawn" %}</th>
+                    <th>{% trans "respawn count" %}</th>
+                    <th>{% trans "address space (vsz)" %}</th>
+                    <th>{% trans "resident memory (rss)" %}</th>
                 </tr>
             </thead>
             <tbody>
             {% for w in workers %}
-                <tr>
+                <tr class="{% cycle 'djDebugOdd' 'djDebugEven' %}">
                     <td>{{ w.id }}</td>
                     <td>{{ w.pid }}</td>
                     <td>{{ w.status }}</td>
                     <td>{{ w.requests }}</td>
                     <td>{{ w.exceptions }}</td>
+                    <td>{{ w.signals }}</td>
                     <td>{{ w.running_time }}</td>
+                    <td>{{ w.avg_rt }}</td>
                     <td>{{ w.load|floatformat:2 }} %</td>
                     <td>{{ w.last_spawn }}</td>
                     <td>{{ w.respawn_count }}</td>
@@ -67,8 +87,42 @@
         </table>
     </div>
     <div class="module balanced">
+        <h4>{% trans 'Applications' %}</h4>
         <table>
-            <caption>{% trans 'Spooler jobs' %}</caption>
+            <thead>
+            <tr>
+                <th>{% trans "#" %}</th>
+                <th>{% trans "modifier1" %}</th>
+                <th>{% trans "mountpoint" %}</th>
+                <th>{% trans "interpreter" %}</th>
+                <th>{% trans "callable" %}</th>
+                <th>{% trans "chdir" %}</th>
+                <th>{% trans "requests" %}</th>
+                <th>{% trans "exceptions" %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for w in workers %}
+                {% for app in w.apps %}
+                    <tr class="{% cycle 'djDebugOdd' 'djDebugEven' %}">
+                        <td>{{ app.id }}</td>
+                        <td>{{ app.modifier1 }}</td>
+                        <td>{{ app.mountpoint }}</td>
+                        <td>{{ app.interpreter }}</td>
+                        <td>{{ app.callable }}</td>
+                        <td>{{ app.chdir }}</td>
+                        <td>{{ app.requests }}</td>
+                        <td>{{ app.exceptions }}</td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="module balanced">
+    <h4>{% trans 'Spooler jobs' %}</h4>
+        <table>
+
             <thead>
                 <tr>
                     <th>job filename</th>
@@ -87,8 +141,13 @@
     </div>
 
     {% if masterpid %}
-    <a href="{% url 'uwsgi_reload' %}">{% trans 'Gracefully reload uWSGI' %}</a>
-    <a href="{% url 'uwsgi_cache_clear' %}">{% trans 'Clear uWSGI cache' %}</a>
+    <div class="submit-row">
+        <a href="{% url 'uwsgi_reload' %}">{% trans 'Gracefully reload uWSGI' %}</a>
+        <a href="{% url 'uwsgi_cache_clear' %}">{% trans 'Clear uWSGI cache' %}</a>
+    </div>
     {% endif %}
+
 </div>
+
+
 {% endif %}

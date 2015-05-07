@@ -1,4 +1,5 @@
-""" uWSGI decorators
+"""
+uWSGI decorators
 shipped with django-uwsgi in case if uWSGI installed system-wide,
 and django project runs in Emperor mode and using virtualenv,
 so uwsgidecorators module not importable.
@@ -9,7 +10,8 @@ from functools import partial
 import sys
 from threading import Thread
 
-from django_uwsgi import uwsgi, pickle
+from . import uwsgi, pickle
+
 
 if uwsgi is None:
     raise ImportError("uWSGI is not available")
@@ -23,6 +25,29 @@ mule_functions = {}
 postfork_chain = []
 
 
+# Python3 compatibility
+def _encode1(val):
+    if sys.version_info >= (3, 0) and isinstance(val, str):
+        return val.encode('utf-8')
+    else:
+        return val
+
+
+def _decode1(val):
+    if sys.version_info >= (3, 0) and isinstance(val, bytes):
+        return val.decode('utf-8')
+    else:
+        return val
+
+
+def _encode_to_spooler(vars):
+    return dict((_encode1(K), _encode1(V)) for (K, V) in vars.items())
+
+
+def _decode_from_spooler(vars):
+    return dict((_decode1(K), _decode1(V)) for (K, V) in vars.items())
+
+
 def get_free_signal():
     for signum in range(0, 256):
         if not uwsgi.signal_registered(signum):
@@ -32,16 +57,22 @@ def get_free_signal():
 
 
 def manage_spool_request(vars):
-    f = spooler_functions[vars['ud_spool_func']]
+    # To check whether 'args' is in vals or not - decode the keys first,
+    # because in python3 all keys in 'vals' are have 'byte' types
+    vars = dict((_decode1(K), V) for (K, V) in vars.items())
     if 'args' in vars:
-        args = pickle.loads(vars.pop('args'))
-        kwargs = pickle.loads(vars.pop('kwargs'))
-        ret = f(*args, **kwargs)
+        for k in ('args', 'kwargs'):
+            vars[k] = pickle.loads(vars.pop(k))
+
+    vars = _decode_from_spooler(vars)
+    f = spooler_functions[vars['ud_spool_func']]
+
+    if 'args' in vars:
+        ret = f(*vars['args'], **vars['kwargs'])
     else:
         ret = f(vars)
-    if not 'ud_spool_ret' in vars:
-        return ret
-    return int(vars['ud_spool_ret'])
+
+    return int(vars.get('ud_spool_ret', ret))
 
 
 def postfork_chain_hook():
@@ -53,6 +84,7 @@ uwsgi.post_fork_hook = postfork_chain_hook
 
 
 class postfork(object):
+
     def __init__(self, f):
         if callable(f):
             self.wid = 0
@@ -61,6 +93,7 @@ class postfork(object):
             self.f = None
             self.wid = f
         postfork_chain.append(self)
+
     def __call__(self, *args, **kwargs):
         if self.f:
             if self.wid > 0 and self.wid != uwsgi.worker_id():
@@ -72,7 +105,7 @@ class postfork(object):
 class _spoolraw(object):
 
     def __call__(self, *args, **kwargs):
-        arguments = self.base_dict
+        arguments = self.base_dict.copy()
         if not self.pass_arguments:
             if len(args) > 0:
                 arguments.update(args[0])
@@ -84,8 +117,9 @@ class _spoolraw(object):
                 if key in kwargs:
                     spooler_args.update({key: kwargs.pop(key)})
             arguments.update(spooler_args)
-            arguments.update({'args': pickle.dumps(args), 'kwargs': pickle.dumps(kwargs)})
-        return uwsgi.spool(arguments)
+            arguments.update(
+                {'args': pickle.dumps(args), 'kwargs': pickle.dumps(kwargs)})
+        return uwsgi.spool(_encode_to_spooler(arguments))
 
     # For backward compatibility (uWSGI < 1.9.13)
     def spool(self, *args, **kwargs):
@@ -239,6 +273,7 @@ class mule_brainloop(mule_brain):
 
 
 class mule(object):
+
     def __init__(self, num):
         self.num = num
 
@@ -247,6 +282,7 @@ class mule(object):
 
 
 class muleloop(mule):
+
     def __call__(self, f):
         postfork_chain.append(mule_brainloop(f, self.num))
 
@@ -266,6 +302,7 @@ class mulemsg_loop(object):
 
 
 class mulemsg(object):
+
     def __init__(self, num):
         self.num = num
 
@@ -311,7 +348,7 @@ class cron(object):
     def __call__(self, f):
         uwsgi.register_signal(self.num, self.target, f)
         uwsgi.add_cron(self.num, self.minute, self.hour,
-            self.day, self.month, self.dayweek)
+                       self.day, self.month, self.dayweek)
         return f
 
 
@@ -352,6 +389,7 @@ class erlang(object):
 
 
 class lock(object):
+
     def __init__(self, f):
         self.f = f
 
