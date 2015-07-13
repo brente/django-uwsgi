@@ -3,9 +3,16 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib import messages
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic import View, TemplateView
-
 from django.core.exceptions import PermissionDenied
-from django.apps import apps
+try:
+    from django.apps import apps
+except ImportError:
+    from django.conf import settings
+    
+    app_is_installed = lambda app: app in settings.INSTALLED_APPS
+else:
+    app_is_installed = apps.is_installed
+
 from . import uwsgi
 
 
@@ -13,7 +20,7 @@ class UwsgiStatus(TemplateView):
 
     """uWSGI Status View"""
 
-    if apps.is_installed('wagtail.wagtailadmin'):
+    if app_is_installed('wagtail.wagtailadmin'):
         template_name = 'uwsgi/wagtail_uwsgi.html'
     else:
         template_name = 'uwsgi/uwsgi.html'
