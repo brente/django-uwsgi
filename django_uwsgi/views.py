@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import messages
@@ -17,9 +18,9 @@ from . import uwsgi
 
 
 class UwsgiStatus(TemplateView):
-
-    """uWSGI Status View"""
-
+    '''
+    uWSGI Status View
+    '''
     if app_is_installed('wagtail.wagtailadmin'):
         template_name = 'uwsgi/wagtail_uwsgi.html'
     else:
@@ -37,9 +38,9 @@ class UwsgiStatus(TemplateView):
 
 
 class UwsgiCacheClear(View):
-
-    """Clear uWSGI Cache View"""
-
+    '''
+    Clear uWSGI Cache View
+    '''
     def get(self, request):
         if not request.user.is_superuser:
             raise PermissionDenied
@@ -54,9 +55,9 @@ class UwsgiCacheClear(View):
 
 
 class UwsgiReload(View):
-
-    """Reload uWSGI View"""
-
+    '''
+    Reload uWSGI View
+    '''
     def get(self, request):
         if not request.user.is_superuser:
             raise PermissionDenied
@@ -67,4 +68,38 @@ class UwsgiReload(View):
         else:
             messages.add_message(request, messages.ERROR, _(
                 'The uWSGI master process is not active'), fail_silently=True)
+        return HttpResponseRedirect(reverse_lazy('uwsgi_index'))
+
+
+class UwsgiLog(View):
+    '''
+    uWSGI Log View
+    '''
+    def post(self, request):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        if uwsgi is not None:
+            uwsgi.log(request.POST.get('log_message'))
+            messages.add_message(request, messages.SUCCESS, _(
+                'uWSGI Log message has been sent!'), fail_silently=True)
+        else:
+            messages.add_message(request, messages.ERROR, _(
+                'uWSGI is not available!'), fail_silently=True)
+        return HttpResponseRedirect(reverse_lazy('uwsgi_index'))
+
+
+class UwsgiSignal(View):
+    '''
+    uWSGI Signal View
+    '''
+    def post(self, request):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        if uwsgi is not None:
+            uwsgi.signal(int(request.POST.get('signal_number')))
+            messages.add_message(request, messages.SUCCESS, _(
+                'uWSGI signal has been sent!'), fail_silently=True)
+        else:
+            messages.add_message(request, messages.ERROR, _(
+                'uWSGI is not available!'), fail_silently=True)
         return HttpResponseRedirect(reverse_lazy('uwsgi_index'))

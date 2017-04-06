@@ -11,20 +11,16 @@ def get_uwsgi_stats():
     total_load = time.time() - uwsgi.started_on
     for w in workers:
         w['running_time'] = w['running_time'] / 1000
+        w['avg_rt'] = w['avg_rt'] / 1000
         w['load'] = w['running_time'] / total_load / 10 / len(workers)
         w['last_spawn'] = datetime.fromtimestamp(w['last_spawn'])
     jobs = []
-    if uwsgi.opt['spooler']:
+    if uwsgi.opt.get('spooler'):
         spooler_jobs = uwsgi.spooler_jobs()
         for j in spooler_jobs:
-            jobs.append({'file': j, 'env': uwsgi.parsefile(j)})
-
+            jobs.append({'file': j, 'env': uwsgi.parsefile(str(j))})
     uwsgi_stats.update({
-        'version': uwsgi.version,
-        'hostname': uwsgi.hostname,
-        'magic': uwsgi.magic_table,
-        'os': os.uname(),
-        'masterpid': uwsgi.masterpid(),
+        'uwsgi': uwsgi,
         'stats': [
             ('loop', uwsgi.loop),
             ('masterpid', str(uwsgi.masterpid())),
@@ -40,8 +36,7 @@ def get_uwsgi_stats():
             ('spooler_pid', uwsgi.spooler_pid() if uwsgi.opt.get('spooler') else _('disabled')),
             ('threads', _('enabled') if uwsgi.has_threads else _('disabled'))
         ],
-        'options': uwsgi.opt.items(),
         'workers': workers,
-        'jobs': jobs,
+        'jobs': jobs
     })
     return uwsgi_stats

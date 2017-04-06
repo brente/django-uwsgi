@@ -1,4 +1,4 @@
-__version__ = '0.1.3'
+__version__ = '0.2.0'
 
 
 try:
@@ -7,7 +7,7 @@ except ImportError:
     uwsgi = None
 
 try:
-    import cPickle as pickle
+    from six.moves import cPickle as pickle
 except ImportError:
     import pickle
 
